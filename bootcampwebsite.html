@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stress Management System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h2, h3 {
+            margin-top: 0;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            background-color: #007bff;
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 5px 0;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #recommendations, #therapists-list {
+            margin-top: 20px;
+        }
+
+        #therapists-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        #therapists-list li {
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+
+        #therapists-list li:hover {
+            background-color: #f0f0f0;
+            padding: 5px;
+            border-radius: 4px;
+        }
+
+        #register-message, #login-message {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="auth-section">
+            <h2>Register</h2>
+            <div id="register-form-container">
+                <form id="register-form">
+                    <div class="form-group">
+                        <label for="register-username">Email</label>
+                        <input type="text" id="register-username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-password">Password</label>
+                        <input type="password" id="register-password" required>
+                    </div>
+                    <button type="submit">Register</button>
+                    <p id="register-message"></p>
+                </form>
+            </div>
+        </div>
+        <div id="dashboard-section" style="display:none;">
+            <h2>Welcome, <span id="user-name"></span>!</h2>
+            <button id="logout-button">Logout</button>
+            <div id="mental-health-form-container">
+                <h3>Mental Health Self-Assessment</h3>
+                <form id="mental-health-form">
+                    <div class="form-group">
+                        <label for="stress-level">How stressed are you?</label>
+                        <select id="stress-level">
+                            <option value="None">None</option>
+                            <option value="Low">Low</option>
+                            <option value="Moderate">Moderate</option>
+                            <option value="High">High</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="depression-level">Are you experiencing depression?</label>
+                        <select id="depression-level">
+                            <option value="No">No</option>
+                            <option value="Mild">Mild</option>
+                            <option value="Moderate">Moderate</option>
+                            <option value="Severe">Severe</option>
+                        </select>
+                    </div>
+                    <button type="submit">Submit</button>
+                </form>
+                <div id="recommendations"></div>
+            </div>
+            <div id="therapists-container">
+                <h3>Choose a Therapist</h3>
+                <button id="show-therapists-button">Show Therapists</button>
+                <ul id="therapists-list"></ul>
+            </div>
+        </div>
+    </div>
+    <script>
+        // In-memory storage for user credentials, mental health data, and therapists
+        const usersDb = JSON.parse(localStorage.getItem('usersDb')) || {};
+        let currentUser = JSON.parse(localStorage.getItem('currentUser'));
+
+        const therapists = [
+            "Dr. Olivia Brown: Skills: Cognitive Behavioral Therapy, Stress Management | Country: USA | Phone Number: +1 555-1234", 
+            "Dr. Ethan Smith: Skills: Mindfulness, Anxiety Management | Country: USA | Phone Number: +1 555-5678", 
+            "Dr. Ava Johnson: Skills: Relationship Counseling, Depression | Country: UK | Phone Number: +44 20 7946 0857", 
+            "Dr. Lucas Martinez: Skills: Family Therapy, Grief Counseling | Country: Canada | Phone Number: +1 416-555-6789",
+            "Dr. Mia Davis: Skills: Trauma Therapy, PTSD | Country: Australia | Phone Number: +61 2 9876 5432", 
+            "Dr. Noah Wilson: Skills: Addiction Therapy, Support Groups | Country: New Zealand | Phone Number: +64 9 123 4567",
+            "Dr. Isabella Anderson: Skills: Eating Disorders, Self-Esteem | Country: USA | Phone Number: +1 555-9876", 
+            "Dr. Liam Thomas: Skills: Child Therapy, Behavioral Issues | Country: UK | Phone Number: +44 20 7946 0858",
+            "Dr. Sophia Taylor: Skills: Life Coaching, Motivation | Country: Canada | Phone Number: +1 613-555-2345",
+            "Dr. Mason Clark: Skills: Career Counseling, Work Stress | Country: Australia | Phone Number: +61 3 5555 1234"
+        ];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (currentUser) {
+                showDashboard();
+            } else {
+                showRegister();
+            }
+        });
+
+        function validPassword(password) {
+            return password.length >= 8;
+        }
+
+        function validEmail(email) {
+            return /^[a-zA-Z0-9._%+-]+@gmail\.com$/.test(email);
+        }
+
+        function showRegister() {
+            document.getElementById('auth-section').style.display = 'block';
+            document.getElementById('dashboard-section').style.display = 'none';
+            document.getElementById('register-form-container').style.display = 'block';
+        }
+
+        function showDashboard() {
+            document.getElementById('auth-section').style.display = 'none';
+            document.getElementById('dashboard-section').style.display = 'block';
+            document.getElementById('user-name').textContent = currentUser.username;
+
+            // Load previous mental health data
+            const recommendations = localStorage.getItem(`recommendations-${currentUser.username}`);
+            if (recommendations) {
+                document.getElementById('recommendations').innerHTML = recommendations;
+            } else {
+                document.getElementById('recommendations').innerHTML = 'No recommendations yet.';
+            }
+        }
+
+        document.getElementById('register-form').addEventListener('submit', (event) => {
+            event.preventDefault();
+            const username = document.getElementById('register-username').value;
+            const password = document.getElementById('register-password').value;
+            
+            if (usersDb[username]) {
+                document.getElementById('register-message').textContent = 'Username already exists.';
+                return;
+            }
+
+            if (!validPassword(password)) {
+                document.getElementById('register-message').textContent = 'Invalid password. It must be at least 8 characters long.';
+                return;
+            }
+
+            if (!validEmail(username)) {
+                document.getElementById('register-message').textContent = 'Invalid email. It must be a Gmail address.';
+                return;
+            }
+
+            usersDb[username] = password;
+            localStorage.setItem('usersDb', JSON.stringify(usersDb));
+            localStorage.setItem('currentUser', JSON.stringify({ username: username }));
+            currentUser = { username: username };
+            showDashboard();
+        });
+
+        document.getElementById('logout-button').addEventListener('click', () => {
+            localStorage.removeItem('currentUser');
+            currentUser = null;
+            showRegister();
+        });
+
+        document.getElementById('mental-health-form').addEventListener('submit', (event) => {
+            event.preventDefault();
+            const stressLevel = document.getElementById('stress-level').value;
+            const depressionLevel = document.getElementById('depression-level').value;
+            let recommendation = '';
+
+            switch (stressLevel) {
+                case 'None':
+                    recommendation += 'Great job! Keep up the good work.';
+                    break;
+                case 'Low':
+                    recommendation += 'Consider practicing relaxation techniques or mindfulness.';
+                    break;
+                case 'Moderate':
+                    recommendation += 'Try to identify stressors and manage them with healthy coping strategies.';
+                    break;
+                case 'High':
+                    recommendation += 'You might benefit from speaking to a professional. Consider seeing a therapist.';
+                    break;
+            }
+
+            switch (depressionLevel) {
+                case 'No':
+                    break;
+                case 'Mild':
+                    recommendation += ' Keep an eye on your mood and practice self-care.';
+                    break;
+                case 'Moderate':
+                    recommendation += ' Consider talking to a therapist to discuss your feelings.';
+                    break;
+                case 'Severe':
+                    recommendation += ' It is important to seek help from a professional immediately.';
+                    break;
+            }
+
+            document.getElementById('recommendations').textContent = recommendation;
+            localStorage.setItem(`recommendations-${currentUser.username}`, recommendation);
+        });
+
+        document.getElementById('show-therapists-button').addEventListener('click', () => {
+            const therapistsList = document.getElementById('therapists-list');
+            therapistsList.innerHTML = ''; // Clear previous list
+            therapists.forEach(therapist => {
+                const li = document.createElement('li');
+                li.textContent = therapist;
+                therapistsList.appendChild(li);
+            });
+        });
+
+        document.getElementById('therapists-list').addEventListener('click', (event) => {
+            if (event.target.tagName === 'LI') {
+                const selectedTherapist = event.target.textContent;
+                alert(`You selected: ${selectedTherapist}`);
+
+                const times = [
+                    `${9 + Math.floor(Math.random() * 8)}:00`,
+                    `${9 + Math.floor(Math.random() * 8)}:00`,
+                    `${9 + Math.floor(Math.random() * 8)}:00`
+                ];
+
+                const timeSlot = prompt(`Available times:\n1: ${times[0]}\n2: ${times[1]}\n3: ${times[2]}\nChoose a time slot by number:`);
+                if (timeSlot >= 1 && timeSlot <= 3) {
+                    alert(`Appointment booked at ${times[timeSlot - 1]} with ${selectedTherapist.split(":")[0]}`);
+                } else {
+                    alert("Invalid choice. Please try again.");
+                }
+            }
+        });
+    </script>
+</body>
+</html>
